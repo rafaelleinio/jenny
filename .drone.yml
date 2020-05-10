@@ -1,0 +1,58 @@
+clone:
+  git:
+    image: plugins/git
+
+pipeline:
+  unit-tests-python3.7: &push
+    image: python:3.7
+    commands:
+      - make requirements
+      - make requirements-test
+      - make unit-tests
+    group: tests37
+    when:
+      event: push
+
+  integration-tests-python3.7:
+    <<: *push
+    commands:
+      - make requirements
+      - make requirements-test
+      - make integration-tests
+    group: tests37
+
+  unit-tests-python3.6:
+    <<: *push
+    image: python:3.6
+    commands:
+      - make requirements
+      - make requirements-test
+      - make unit-tests
+    group: tests36
+
+  integration-tests-python3.6:
+    <<: *push
+    image: python:3.6
+    commands:
+      - make requirements
+      - make requirements-test
+      - make integration-tests
+    group: tests36
+
+  style-check:
+    <<: *push
+    commands:
+      - make requirements-lint
+      - make style-check
+    group: tests37
+    when:
+      event: push
+
+  check-flake8:
+    <<: *push
+    commands:
+      - make requirements-lint
+      - make check-flake8
+    group: tests37
+    when:
+      event: push
