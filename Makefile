@@ -59,7 +59,8 @@ check-flake8:
 	@echo "Flake 8"
 	@echo "======="
 	@echo ""
-	@python -m flake8 && echo "Success"
+	@python -m flake8 jenny/ && echo "jenny module success"
+	@python -m flake8 tests/ && echo "tests module success"
 	@echo ""
 
 .PHONY: checks
