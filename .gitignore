@@ -112,3 +112,6 @@ ENV/
 .package_name
 .repository_url
 *cov/
+
+# Drone.io
+pip/

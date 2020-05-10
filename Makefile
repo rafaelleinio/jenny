@@ -18,6 +18,11 @@ dev-requirements:
 ## install all requirements
 requirements: requirements-test requirements-lint dev-requirements minimum-requirements
 
+.PHONY: drone-install
+drone-install:
+	@pip install --upgrade pip
+	@python -m pip install -U -r requirements.test.txt -r requirements.lint.txt -r requirements.dev.txt -r requirements.txt -t ./pip/deps --cache-dir ./pip/cache
+
 .PHONY: tests
 tests:
 	@python -m pytest -n=auto --cov-config=.coveragerc --cov=jenny --cov-report term --cov-report html:htmlcov --cov-report xml:coverage.xml tests
