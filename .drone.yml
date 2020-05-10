@@ -3,11 +3,10 @@ clone:
     image: plugins/git
 
 pipeline:
-  pipeline:
-    install: &install
-      image: rappdw/docker-java-python
-      commands:
-        - make drone-install
+  install: &install
+    image: rappdw/docker-java-python
+    commands:
+      - make drone-install
 
   style-check:
     <<: *install
