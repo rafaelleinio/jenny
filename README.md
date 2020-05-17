@@ -3,6 +3,8 @@ Welcome to Jenny Project! Data quality checks and data profiling made easy.
 
 ![](https://i.pinimg.com/originals/bf/88/1b/bf881b6f1fdb18d0f34dd9c47f42a6f2.gif)
 
+[![Build Status](https://cloud.drone.io/api/badges/rafaelleinio/jenny/status.svg)](https://cloud.drone.io/rafaelleinio/jenny) ![PyPI](https://img.shields.io/pypi/v/jenny) ![GitHub](https://img.shields.io/github/license/rafaelleinio/jenny)
+
 Python Example:
 ```python
 from jenny import my_lib
