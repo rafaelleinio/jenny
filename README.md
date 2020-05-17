@@ -35,6 +35,12 @@ def foo():
     bar = my_lib.cool_method()
 ```
 
+If you want to experiment the latest features on development branch just run:
+```bash
+pip install git+https://github.com/rafaelleinio/jenny.git@dev
+```
+> keep in mind that the development branch may be not stable
+
 ## Development Environment
 
 At the bare minimum you'll need the following for your development
@@ -108,7 +114,7 @@ Run only unit tests:
 `make unit-tests`
 
 Run only integration tests:
-`integration-tests`
+`make integration-tests`
 
 [pytest](https://docs.pytest.org/en/latest/)
 is used to write all of this project's tests.
@@ -126,13 +132,17 @@ Additionally [Flake 8](http://flake8.pycqa.org/en/latest/) is used to
 check for other things such as unnecessary imports and code-complexity.
 
 You can check Flake 8 and Black by running the following within the project root:
-
 ```bash
 make checks
 ```
+
+#### Important:
+The build of your branch will not be accepted in Drone.io if the code is not in
+conformity with this style. So please, check before open a PR.
 
 ## Release
 TBD
 
 ## Contributing
 Any contributions are welcome! Feel free to open Pull Requests.
+Contributing guidelines are under development.
