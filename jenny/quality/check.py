@@ -2,6 +2,7 @@ from pyspark.sql import Column
 
 from typing import Callable
 
+
 class Check:
     def __init__(self, metric: Callable, *args, **kwargs):
         self.metric = metric
