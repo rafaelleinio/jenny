@@ -1,0 +1,12 @@
+# core
+numpy
+matplotlib
+scipy
+statsmodels
+Faker
+pyspark>=3.0.0
+
+# ML
+pystan==2.19.1.1
+prophet
+# luminaire
