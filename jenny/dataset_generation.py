@@ -206,7 +206,11 @@ class IdFeatureGenerator(FeatureGenerator):
 
 
 class TimestampFeatureGenerator(FeatureGenerator):
-    def __init__(self, name: str, nulls_proportion: Optional[float] = 0.0,):
+    def __init__(
+        self,
+        name: str,
+        nulls_proportion: Optional[float] = 0.0,
+    ):
         super().__init__(name, nulls_proportion)
 
     def _generate(self, time_context: TimeContext) -> datetime:
