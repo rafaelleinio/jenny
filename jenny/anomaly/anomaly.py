@@ -41,35 +41,35 @@ class ForecastModel(ABC):
         return calculate_ape(true=true, predicted=predicted)
 
     def train(self, train_pdf: pd.DataFrame) -> TrainMetrics:
-        train_start_ts = datetime.now()
+        train_log_start_ts = datetime.now()
         self._train(train_pdf)
-        train_end_ts = datetime.now()
+        train_log_end_ts = datetime.now()
         self.is_trained = True
         return TrainMetrics(
-            train_time=int((train_end_ts - train_start_ts).total_seconds() * 1000),
+            train_time=int((train_log_end_ts - train_log_start_ts).total_seconds() * 1000),
             errors=self._calculate_train_errors(train_pdf),
             start_ts=train_pdf[self.ts_column].min().to_pydatetime(),
-            end_ts=train_pdf[self.ts_column].min().to_pydatetime(),
+            end_ts=train_pdf[self.ts_column].max().to_pydatetime(),
         )
 
     @abstractmethod
     def _predict(self, ts_pdf: pd.DataFrame) -> pd.DateFrame:
         pass
 
-    def _make_ts_dataframe(self, periods: int, include_history: bool) -> pd.DataFrame:
-        start_ts = self.train_metrics.start_ts if include_history else self.train_metrics.end_ts
+    def _make_ts_dataframe(self, periods: int, time_granularity: timedelta, include_history: bool) -> pd.DataFrame:
+        start_ts = self.train_metrics.start_ts if include_history else (self.train_metrics.end_ts + time_granularity)
         periods = (
-            (self.train_metrics.start_ts - self.train_metrics.end_ts).days
+            (self.train_metrics.start_ts - self.train_metrics.end_ts) / time_granularity
             if include_history
             else periods
         )
-        dates = pd.date_range(start=start_ts, periods=periods + 1)
+        dates = pd.date_range(start=start_ts, periods=periods)
         return pd.DataFrame({self.ts_column: dates})
 
-    def predict(self, periods: int = 1, include_history=False) -> pd.DataFrame:
+    def predict(self, periods: int = 1, time_granularity: timedelta = timedelta(days=1), include_history=False) -> pd.DataFrame:
         if not self.is_trained:
             raise RuntimeError("Model needs to be trained before.")
-        ts_pdf = self._make_ts_dataframe(periods, include_history)
+        ts_pdf = self._make_ts_dataframe(periods=periods, time_granularity=time_granularity, include_history=include_history)
         return self._predict(ts_pdf)
 
 
@@ -198,18 +198,24 @@ class CrossValidation:
     def _calculate_error(self, predicted: pd.DataFrame, real: pd.DataFrame) -> float:
         pass
 
-    def _validate_ts(self, name: str, data_pdf: pd.DataFrame, timestamp: datetime, validation_spec: ModelValidationSpec):
-        validation_ts = timestamp - (self.time_granularity * 2)
-        validation_train_pdf = self._filter_pdf(data_pdf, validation_ts)
+    def _validate_ts(self, name: str, data_pdf: pd.DataFrame, timestamp: datetime, validation_spec: ModelValidationSpec) -> List[ModelValidationResult]:
+        validation_train_ts = timestamp - (self.time_granularity * 2)
+        validation_train_pdf = self._filter_pdf(data_pdf, validation_train_ts)
 
         validation_results = []
         for model_kwargs in validation_spec.model_kwargs_list:
-            model = self._create_model(name, model_kwargs)
-            model.train(validation_train_pdf)
-            predict_target_ts_pdf = model.predict()
+            # train
+            validation_model = self._create_model(name, model_kwargs)
+            validation_model.train(validation_train_pdf)
+
+            # validation
+            predict_target_ts_pdf = validation_model.predict()
+            validation_ts = validation_train_ts + self.time_granularity
             real_target_ts_pdf = self._filter_pdf(data_pdf, start_ts=validation_ts, end_ts=validation_ts)
             error = self._calculate_error(predicted=predict_target_ts_pdf, real=real_target_ts_pdf)
-            validation_results.append(ModelValidationResult(error=error, model_kwargs=model_kwargs)
+
+            validation_results.append(ModelValidationResult(error=error, model_kwargs=model_kwargs))
+
         return validation_results
 
     def _evaluate_ts(
@@ -219,14 +225,25 @@ class CrossValidation:
             timestamp: datetime,
             validation_spec: ModelValidationSpec
     ) -> ModelEvaluationResult:
-        evaluation_ts = timestamp - self.time_granularity
-        evaluation_train_pdf = self._filter_pdf(data_pdf, evaluation_ts)
-
+        # model selection
         validation_results = self._validate_ts(name, data_pdf, timestamp, validation_spec)
-        best_validation_result = sorted(validation_results).pop()
+        best_validation_result: ModelValidationResult = min(validation_results)
+        evaluation_model = self._create_model(
+            name=name, model_kwargs=best_validation_result.model_kwargs
+        )
 
+        # model evaluation
+        evaluation_train_ts = timestamp - self.time_granularity
+        evaluation_train_pdf = self._filter_pdf(data_pdf, evaluation_train_ts)
+        evaluation_model.train(evaluation_train_pdf)
 
-        return ModelEvaluationResult(name=, timestamp=, model_kwargs=, error=)
+        predict_target_ts_pdf = evaluation_model.predict()
+        real_target_ts_pdf = self._filter_pdf(data_pdf, start_ts=timestamp, end_ts=timestamp)
+        error = self._calculate_error(predicted=predict_target_ts_pdf, real=real_target_ts_pdf)
+
+        return ModelEvaluationResult(
+            name=name, timestamp=timestamp, model_kwargs=evaluation_model.model_kwargs, error=error
+        )
 
     def run(self, data_pdf: pd.DataFrame):
         sorted_data_pdf = data_pdf.sort_values(by=[self.ts_column])
